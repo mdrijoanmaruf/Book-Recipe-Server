@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express()
 
@@ -38,6 +38,14 @@ async function run() {
     app.get("/recipe" , async(req,res) => {
       const cursor = recipeCollection.find()
       const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    // Delete Single Recipe
+    app.delete('/recipe/:id' , async(req , res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await recipeCollection.deleteOne(query)
       res.send(result)
     })
 
