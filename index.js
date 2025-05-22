@@ -41,6 +41,14 @@ async function run() {
       res.send(result)
     })
 
+    // Fetch Single Recipe
+    app.get('/recipe/:id' , async (req , res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await recipeCollection.findOne(query)
+      res.send(result)
+    })
+
     // Delete Single Recipe
     app.delete('/recipe/:id' , async(req , res) => {
       const id = req.params.id;
@@ -64,6 +72,50 @@ async function run() {
       res.send(result)
     })
 
+    // Like Recipe
+    app.patch('/recipe/like/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const { email } = req.body;
+      
+      // First get the recipe to check if user already liked it
+      const recipe = await recipeCollection.findOne(filter);
+      
+      // Initialize likedBy array if it doesn't exist
+      if (!recipe.likedBy) {
+        recipe.likedBy = [];
+      }
+      
+      let updateDoc;
+      
+      // Check if user already liked this recipe
+      if (recipe.likedBy.includes(email)) {
+        // User already liked, so unlike
+        updateDoc = {
+          $inc: { likeCount: -1 },
+          $pull: { likedBy: email }
+        };
+      } else {
+        // User hasn't liked, so add like
+        updateDoc = {
+          $inc: { likeCount: 1 },
+          $push: { likedBy: email }
+        };
+      }
+      
+      const result = await recipeCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // Fetch Top Recipes by Like Count
+    app.get("/top-recipes", async(req, res) => {
+      const limit = parseInt(req.query.limit) || 6;
+      const result = await recipeCollection.find()
+        .sort({ likeCount: -1 })
+        .limit(limit)
+        .toArray();
+      res.send(result);
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
